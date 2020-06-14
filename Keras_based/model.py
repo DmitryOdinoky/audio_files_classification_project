@@ -34,7 +34,7 @@ import operator
 #%%
 
 
-TESTING_CSV_PATH = 'D:/Sklad/Jan 19/RTU works/3_k_sem_1/Bakalaura Darbs/-=Python Code=-/DATASETS/FSD/FSDKaggle2018.meta/10_class_MI_big_train.csv'
+TESTING_CSV_PATH = 'D:/Sklad/Jan 19/RTU works/3_k_sem_1/Bakalaura Darbs/-=Python Code=-/DATASETS/FSD/FSDKaggle2018.meta/train_post_competition.csv'
 CLEANED_FILES_PATH = 'D:/Sklad/Jan 19/RTU works/3_k_sem_1/Bakalaura Darbs/-=Python Code=-/DATASETS/FSD/FSDKaggle2018.audio_train/'
 
 # TESTING_CSV_PATH = 'D:/Sklad/Jan 19/RTU works/3_k_sem_1/Bakalaura Darbs/-=Python Code=-/-=2020=-/graduation_project/data_stuff/mini_dataset/train_mini_dataset.csv'
@@ -146,9 +146,9 @@ def build_rand_feat():
     if config.mode == 'conv':
         X = X.reshape(X.shape[0], X.shape[1], X.shape[2], 1)
     elif config.mode =='resnet':
-        X = X.reshape(X.shape[0], X.shape[1], X.shape[2])
+        X = X.reshape(X.shape[0], X.shape[1], X.shape[2], 1)
     
-    y = to_categorical(y, num_classes=10)
+    y = to_categorical(y, num_classes=41)
     
     config.data = (X,y)
     
@@ -162,15 +162,15 @@ resnet_model = ResNet50(weights=None, include_top=False, input_shape=(32, 32, 1)
 def get_resnet_model():
     model = Sequential()
     
-    model.add(UpSampling2D())
     #model.add(UpSampling2D())
+    model.add(UpSampling2D())
     model.add(resnet_model)
     
     model.add(GlobalAveragePooling2D())
     model.add(Dense(256, activation='relu'))
     model.add(Dropout(0.25))
     model.add(BatchNormalization())
-    model.add(Dense(10, activation='softmax'))
+    model.add(Dense(41, activation='softmax'))
     #model.summary()
     model.compile(RAdam(),loss='categorical_crossentropy',
                   #optimizer='adam',
@@ -206,7 +206,7 @@ def get_conv_model():
     
     #model.add(Dense(128, activation='relu'))
     #model.add(Dense(64, activation='relu'))
-    model.add(Dense(10, activation='softmax'))
+    model.add(Dense(41, activation='softmax'))
     model.summary()
     model.compile(RAdam(),loss='categorical_crossentropy',
                   #optimizer='adam',
@@ -239,6 +239,8 @@ class_dist = df.groupby(['label'])['length'].mean()
 
 n_samples = 2 * int(df['length'].sum()/0.1) #why do we have coefficent 2 here? *Make sure we have dataset big enough
 
+
+
 prob_dist = class_dist / class_dist.sum()
 choices = np.random.choice(class_dist.index, p=prob_dist)
 
@@ -268,11 +270,12 @@ elif config.mode == 'resnet':
 class_weight = compute_class_weight('balanced', np.unique(y_flat), y_flat)
 
 checkpoint = ModelCheckpoint(config.model_path, monitor='val_acc', verbose=1, mode='max',
-                             save_best_only=True, save_weights_only=False, period=1)
+                             save_best_only=True, save_weights_only=False, period=3)
 
-model.fit(X, y, epochs=3, batch_size=32,shuffle=True,
+model.fit(X, y, epochs=14, batch_size=256,shuffle=True,
           validation_split=0.3, callbacks=[checkpoint])
 
 model.save(config.model_path)    
 ## asdf
+
 
