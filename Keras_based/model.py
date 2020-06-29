@@ -33,12 +33,12 @@ import operator
 
 #%%
 
-
-TESTING_CSV_PATH = 'D:/Sklad/Jan 19/RTU works/3_k_sem_1/Bakalaura Darbs/-=Python Code=-/DATASETS/FSD/FSDKaggle2018.meta/train_post_competition.csv'
-CLEANED_FILES_PATH = 'D:/Sklad/Jan 19/RTU works/3_k_sem_1/Bakalaura Darbs/-=Python Code=-/DATASETS/FSD/FSDKaggle2018.audio_train/'
+TESTING_CSV_PATH = 'D:/Sklad/Jan 19/RTU works/3_k_sem_1/Bakalaura Darbs/-=Python Code=-/DATASETS/FSD/FSDKaggle2018.meta/train_12_classes.csv'
+# TESTING_CSV_PATH = 'D:/Sklad/Jan 19/RTU works/3_k_sem_1/Bakalaura Darbs/-=Python Code=-/DATASETS/FSD/FSDKaggle2018.meta/train_post_competition.csv'
+CLEANED_FILES_PATH = 'D:/Sklad/Jan 19/RTU works/3_k_sem_1/Bakalaura Darbs/-=Python Code=-/DATASETS/FSD_downsampled/FSDKaggle2018.audio_train/'
 
 # TESTING_CSV_PATH = 'D:/Sklad/Jan 19/RTU works/3_k_sem_1/Bakalaura Darbs/-=Python Code=-/-=2020=-/graduation_project/data_stuff/mini_dataset/train_mini_dataset.csv'
-# CLEANED_FILES_PATH = 'D:/Sklad/Jan 19/RTU works/3_k_sem_1/Bakalaura Darbs/-=Python Code=-/-=2020=-/graduation_project/data_stuff/mini_dataset/wavfiles/'
+# CLEANED_FILES_PATH = 'D:/Sklad/Jan 19/RTU works/3_k_sem_1/Bakalaura Darbs/-=Python Code=-/-=2020=-/graduation_project/data_stuff/mini_dataset_downsampled/wavfiles/'
 
 def recall_m(y_true, y_pred):
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
@@ -148,7 +148,7 @@ def build_rand_feat():
     elif config.mode =='resnet':
         X = X.reshape(X.shape[0], X.shape[1], X.shape[2], 1)
     
-    y = to_categorical(y, num_classes=41)
+    y = to_categorical(y, num_classes=12)
     
     config.data = (X,y)
     
@@ -167,10 +167,10 @@ def get_resnet_model():
     model.add(resnet_model)
     
     model.add(GlobalAveragePooling2D())
-    model.add(Dense(256, activation='relu'))
-    model.add(Dropout(0.25))
+    model.add(Dense(1024, activation='relu'))
+    #model.add(Dropout(0.5))
     model.add(BatchNormalization())
-    model.add(Dense(41, activation='softmax'))
+    model.add(Dense(12, activation='softmax'))
     #model.summary()
     model.compile(RAdam(),loss='categorical_crossentropy',
                   #optimizer='adam',
@@ -201,12 +201,15 @@ def get_conv_model():
     
     
     model.add(MaxPool2D((2,2)))
+    
+    #model.add(BatchNormalization())
     model.add(Dropout(0.5))
+    
     model.add(Flatten())
     
     #model.add(Dense(128, activation='relu'))
     #model.add(Dense(64, activation='relu'))
-    model.add(Dense(41, activation='softmax'))
+    model.add(Dense(12, activation='softmax'))
     model.summary()
     model.compile(RAdam(),loss='categorical_crossentropy',
                   #optimizer='adam',
@@ -253,7 +256,7 @@ plt.show()
 
 
 
-config = config(mode='resnet')
+config = config(mode='conv')
 
 if config.mode == 'conv':
     X, y = build_rand_feat()
@@ -272,7 +275,7 @@ class_weight = compute_class_weight('balanced', np.unique(y_flat), y_flat)
 checkpoint = ModelCheckpoint(config.model_path, monitor='val_acc', verbose=1, mode='max',
                              save_best_only=True, save_weights_only=False, period=3)
 
-model.fit(X, y, epochs=14, batch_size=256,shuffle=True,
+model.fit(X, y, epochs=30, batch_size=256,shuffle=True,
           validation_split=0.3, callbacks=[checkpoint])
 
 model.save(config.model_path)    
